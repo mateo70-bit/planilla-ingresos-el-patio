@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2e7d32">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>El Patio - Registro Diario</title>
   <style>
     :root {
@@ -140,7 +143,7 @@
   const API_URL = "https://script.google.com/macros/s/AKfycbzf0tMJKFoFqQM0UJadpxyjO3C4kNyi-GadfRMx0az9BFB1dsLlGNlIi6-wizUy9wlW/exec";
   let tipoActual = 'EGRESO';
 
-  document.getElementById('fecha').valueToDate = new Date();
+  // Establece la fecha actual por defecto en formato YYYY-MM-DD
   document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
 
   function setTipo(tipo) {
@@ -160,51 +163,51 @@
     }
   }
 
-// Lista de respaldo basada en las pestañas de la planilla El Patio
-const OPCIONES_RESPALDO = {
-  formasPago: ['Mercado Pago', 'Caja', 'Adrian', 'Martin', 'Marcelo'],
-  categorias: [
-    'Insumos cocina', 
-    'Bebidas', 
-    'Gastos impositivos', 
-    'Servicios', 
-    'Cambio para el local', 
-    'Gastos varios', 
-    'Devolucion a socio', 
-    'Distribucion utilidades', 
-    'Mantenimiento y mejoras'
-  ]
-};
+  // Lista de respaldo basada en la estructura de la planilla El Patio
+  const OPCIONES_RESPALDO = {
+    formasPago: ['Mercado Pago', 'Caja', 'Adrian', 'Martin', 'Marcelo'],
+    categorias: [
+      'Insumos cocina', 
+      'Bebidas', 
+      'Gastos impositivos', 
+      'Servicios', 
+      'Cambio para el local', 
+      'Gastos varios', 
+      'Devolucion a socio', 
+      'Distribucion utilidades', 
+      'Mantenimiento y mejoras'
+    ]
+  };
 
-function poblarSelects(data) {
-  const selectCat = document.getElementById('categoria');
-  const selectMedio = document.getElementById('formaPago');
+  function poblarSelects(data) {
+    const selectCat = document.getElementById('categoria');
+    const selectMedio = document.getElementById('formaPago');
 
-  if (selectCat) {
-    selectCat.innerHTML = data.categorias.map(c => `<option value="${c}">${c}</option>`).join('');
-  }
-  if (selectMedio) {
-    selectMedio.innerHTML = data.formasPago.map(m => `<option value="${m}">${m}</option>`).join('');
-  }
-}
-
-async function cargarFiltros() {
-  // Carga opciones de respaldo inmediatamente para evitar bloqueo visual
-  poblarSelects(OPCIONES_RESPALDO);
-
-  // Intenta actualizar con los datos en tiempo real de Google Sheets
-  try {
-    const res = await fetch(`${API_URL}?action=getCategories`);
-    if (res.ok) {
-      const data = await res.json();
-      poblarSelects(data);
+    if (selectCat && data.categorias) {
+      selectCat.innerHTML = data.categorias.map(c => `<option value="${c}">${c}</option>`).join('');
     }
-  } catch (e) {
-    console.warn("Usando opciones locales por falta de respuesta del servidor:", e);
+    if (selectMedio && data.formasPago) {
+      selectMedio.innerHTML = data.formasPago.map(m => `<option value="${m}">${m}</option>`).join('');
+    }
   }
-}
 
-  // Evaluar expresiones matemáticas simples (ej: 1200+450)
+  async function cargarFiltros() {
+    // 1. Carga inmediata de las opciones de respaldo local
+    poblarSelects(OPCIONES_RESPALDO);
+
+    // 2. Intenta actualizar remotamente desde Google Sheets
+    try {
+      const res = await fetch(`${API_URL}?action=getCategories`);
+      if (res.ok) {
+        const data = await res.json();
+        poblarSelects(data);
+      }
+    } catch (e) {
+      console.warn("Usando opciones locales por falta de respuesta remota:", e);
+    }
+  }
+
+  // Evalúa expresiones matemáticas simples ingresadas en el monto (ej: 1500+500)
   function calcularMonto(expresion) {
     try {
       const limpia = expresion.replace(/[^0-9+.-]/g, '');
