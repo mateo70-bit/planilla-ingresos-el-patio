@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>El Patio - Registro Diario</title>
+  <style>
+    :root {
+      --primary: #2e7d32;
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --text: #333333;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .app-card {
+      background: var(--card);
+      width: 100%;
+      max-width: 450px;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      color: var(--primary);
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
+    button {
+      background-color: var(--primary);
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:disabled {
+      background-color: #a5d6a7;
+    }
+    .type-toggle {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .type-btn {
+      flex: 1;
+      padding: 10px;
+      background: #e0e0e0;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      color: #555;
+    }
+    .type-btn.active-egreso {
+      background: #d32f2f;
+      color: white;
+    }
+    .type-btn.active-ingreso {
+      background: #2e7d32;
+      color: white;
+    }
+    #status {
+      text-align: center;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-card">
+  <h2>El Patio - Gastos y Caja</h2>
+  
+  <div class="type-toggle">
+    <button type="button" id="btnEgreso" class="type-btn active-egreso" onclick="setTipo('EGRESO')">EGRESO</button>
+    <button type="button" id="btnIngreso" class="type-btn" onclick="setTipo('INGRESO')">INGRESO</button>
+  </div>
+
+  <form id="registroForm">
+    <div class="form-group">
+      <label for="fecha">Fecha</label>
+      <input type="date" id="fecha" required>
+    </div>
+
+    <div class="form-group">
+      <label for="descripcion">Descripción / Detalle</label>
+      <input type="text" id="descripcion" placeholder="Ej: Muzza, Proveedor, Ventas" required>
+    </div>
+
+    <div class="form-group" id="groupCategoria">
+      <label for="categoria">Categoría</label>
+      <select id="categoria">
+        <option value="">Cargando opciones...</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="monto">Monto ($) [Soporta sumas: 1500+500]</label>
+      <input type="text" id="monto" placeholder="0.00" inputmode="decimal" required>
+    </div>
+
+    <div class="form-group">
+      <label for="formaPago">Forma de Pago / Medio</label>
+      <select id="formaPago" required>
+        <option value="">Cargando opciones...</option>
+      </select>
+    </div>
+
+    <button type="submit" id="btnGuardar">Registrar Operación</button>
+  </form>
+
+  <div id="status"></div>
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbzf0tMJKFoFqQM0UJadpxyjO3C4kNyi-GadfRMx0az9BFB1dsLlGNlIi6-wizUy9wlW/exec";
+  let tipoActual = 'EGRESO';
+
+  document.getElementById('fecha').valueToDate = new Date();
+  document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+
+  function setTipo(tipo) {
+    tipoActual = tipo;
+    const btnEgreso = document.getElementById('btnEgreso');
+    const btnIngreso = document.getElementById('btnIngreso');
+    const groupCat = document.getElementById('groupCategoria');
+
+    if (tipo === 'EGRESO') {
+      btnEgreso.className = 'type-btn active-egreso';
+      btnIngreso.className = 'type-btn';
+      groupCat.style.display = 'block';
+    } else {
+      btnIngreso.className = 'type-btn active-ingreso';
+      btnEgreso.className = 'type-btn';
+      groupCat.style.display = 'none';
+    }
+  }
+
+  async function cargarFiltros() {
+    try {
+      const res = await fetch(`${API_URL}?action=getCategories`);
+      const data = await res.json();
+      
+      const selectCat = document.getElementById('categoria');
+      selectCat.innerHTML = data.categorias.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      const selectMedio = document.getElementById('formaPago');
+      selectMedio.innerHTML = data.formasPago.map(m => `<option value="${m}">${m}</option>`).join('');
+    } catch (e) {
+      console.error("Error cargando listas de la planilla:", e);
+    }
+  }
+
+  // Evaluar expresiones matemáticas simples (ej: 1200+450)
+  function calcularMonto(expresion) {
+    try {
+      const limpia = expresion.replace(/[^0-9+.-]/g, '');
+      return Function(`'use strict'; return (${limpia})`)();
+    } catch (e) {
+      return NaN;
+    }
+  }
+
+  document.getElementById('registroForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const statusDiv = document.getElementById('status');
+    const btn = document.getElementById('btnGuardar');
+    
+    const rawMonto = document.getElementById('monto').value;
+    const montoCalculado = calcularMonto(rawMonto);
+
+    if (isNaN(montoCalculado) || montoCalculado <= 0) {
+      statusDiv.style.color = 'red';
+      statusDiv.innerText = 'Por favor ingrese un monto válido.';
+      return;
+    }
+
+    btn.disabled = true;
+    statusDiv.style.color = '#555';
+    statusDiv.innerText = 'Guardando en Google Sheets...';
+
+    const payload = {
+      tipo: tipoActual,
+      fecha: document.getElementById('fecha').value,
+      descripcion: document.getElementById('descripcion').value,
+      categoria: tipoActual === 'EGRESO' ? document.getElementById('categoria').value : '',
+      monto: montoCalculado,
+      formaPago: document.getElementById('formaPago').value
+    };
+
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      statusDiv.style.color = 'green';
+      statusDiv.innerText = '¡Registrado con éxito!';
+      document.getElementById('descripcion').value = '';
+      document.getElementById('monto').value = '';
+    } catch (err) {
+      statusDiv.style.color = 'red';
+      statusDiv.innerText = 'Error al registrar. Intenta de nuevo.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  cargarFiltros();
+</script>
+
+</body>
+</html>
