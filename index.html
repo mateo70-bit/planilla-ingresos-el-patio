@@ -117,7 +117,15 @@
     <div class="form-group" id="groupCategoria">
       <label for="categoria">Categoría</label>
       <select id="categoria">
-        <option value="">Cargando opciones...</option>
+        <option value="Insumos cocina">Insumos cocina</option>
+        <option value="Bebidas">Bebidas</option>
+        <option value="Gastos impositivos">Gastos impositivos</option>
+        <option value="Servicios">Servicios</option>
+        <option value="Cambio para el local">Cambio para el local</option>
+        <option value="Gastos varios">Gastos varios</option>
+        <option value="Devolucion a socio">Devolucion a socio</option>
+        <option value="Distribucion utilidades">Distribucion utilidades</option>
+        <option value="Mantenimiento y mejoras">Mantenimiento y mejoras</option>
       </select>
     </div>
 
@@ -129,7 +137,11 @@
     <div class="form-group">
       <label for="formaPago">Forma de Pago / Medio</label>
       <select id="formaPago" required>
-        <option value="">Cargando opciones...</option>
+        <option value="Mercado Pago">Mercado Pago</option>
+        <option value="Caja">Caja</option>
+        <option value="Adrian">Adrian</option>
+        <option value="Martin">Martin</option>
+        <option value="Marcelo">Marcelo</option>
       </select>
     </div>
 
@@ -143,7 +155,7 @@
   const API_URL = "https://script.google.com/macros/s/AKfycbzf0tMJKFoFqQM0UJadpxyjO3C4kNyi-GadfRMx0az9BFB1dsLlGNlIi6-wizUy9wlW/exec";
   let tipoActual = 'EGRESO';
 
-  // Establece la fecha actual por defecto en formato YYYY-MM-DD
+  // Establecer fecha de hoy por defecto
   document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
 
   function setTipo(tipo) {
@@ -163,39 +175,19 @@
     }
   }
 
-  // Lista de respaldo basada en la estructura de la planilla El Patio
-  const OPCIONES_RESPALDO = {
-    formasPago: ['Mercado Pago', 'Caja', 'Adrian', 'Martin', 'Marcelo'],
-    categorias: [
-      'Insumos cocina', 
-      'Bebidas', 
-      'Gastos impositivos', 
-      'Servicios', 
-      'Cambio para el local', 
-      'Gastos varios', 
-      'Devolucion a socio', 
-      'Distribucion utilidades', 
-      'Mantenimiento y mejoras'
-    ]
-  };
-
   function poblarSelects(data) {
     const selectCat = document.getElementById('categoria');
     const selectMedio = document.getElementById('formaPago');
 
-    if (selectCat && data.categorias) {
+    if (selectCat && data.categorias && data.categorias.length > 0) {
       selectCat.innerHTML = data.categorias.map(c => `<option value="${c}">${c}</option>`).join('');
     }
-    if (selectMedio && data.formasPago) {
+    if (selectMedio && data.formasPago && data.formasPago.length > 0) {
       selectMedio.innerHTML = data.formasPago.map(m => `<option value="${m}">${m}</option>`).join('');
     }
   }
 
   async function cargarFiltros() {
-    // 1. Carga inmediata de las opciones de respaldo local
-    poblarSelects(OPCIONES_RESPALDO);
-
-    // 2. Intenta actualizar remotamente desde Google Sheets
     try {
       const res = await fetch(`${API_URL}?action=getCategories`);
       if (res.ok) {
@@ -203,11 +195,10 @@
         poblarSelects(data);
       }
     } catch (e) {
-      console.warn("Usando opciones locales por falta de respuesta remota:", e);
+      console.warn("Usando opciones locales predeterminadas:", e);
     }
   }
 
-  // Evalúa expresiones matemáticas simples ingresadas en el monto (ej: 1500+500)
   function calcularMonto(expresion) {
     try {
       const limpia = expresion.replace(/[^0-9+.-]/g, '');
@@ -264,6 +255,7 @@
     }
   });
 
+  // Intentar sincronizar categorías en segundo plano
   cargarFiltros();
 </script>
 
