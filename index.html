@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#2e7d32">
-  <title>El Patio - Registro Diario</title>
+  <title>El Patio - Registro Único</title>
   <style>
     :root {
       --primary: #2e7d32;
@@ -94,7 +94,7 @@
 <body>
 
 <div class="app-card">
-  <h2>El Patio - Gastos y Caja</h2>
+  <h2>El Patio - Registro Único</h2>
   
   <div class="type-toggle">
     <button type="button" id="btnEgreso" class="type-btn active-egreso" onclick="setTipo('EGRESO')">EGRESO</button>
@@ -121,9 +121,10 @@
         <option value="Servicios">Servicios</option>
         <option value="Cambio para el local">Cambio para el local</option>
         <option value="Gastos varios">Gastos varios</option>
-        <option value="Devolucion a socio">Devolucion a socio</option>
-        <option value="Distribucion utilidades">Distribucion utilidades</option>
+        <option value="Devolución a socio">Devolución a socio</option>
+        <option value="Distribución utilidades">Distribución utilidades</option>
         <option value="Mantenimiento y mejoras">Mantenimiento y mejoras</option>
+        <option value="Ventas">Ventas</option>
       </select>
     </div>
 
@@ -133,13 +134,13 @@
     </div>
 
     <div class="form-group">
-      <label for="formaPago">Forma de Pago / Medio</label>
+      <label for="formaPago">Medio / Forma de Pago</label>
       <select id="formaPago" required>
-        <option value="Mercado Pago">Mercado Pago</option>
         <option value="Caja">Caja</option>
-        <option value="Adrian">Adrian</option>
-        <option value="Martin">Martin</option>
-        <option value="Marcelo">Marcelo</option>
+        <option value="Mercado Pago">Mercado Pago</option>
+        <option value="Adrian">Socio Adrián</option>
+        <option value="Martin">Socio Martín</option>
+        <option value="Marcelo">Socio Marcelo</option>
       </select>
     </div>
 
@@ -150,27 +151,27 @@
 </div>
 
 <script>
-  // Reemplaza esta URL por la obtenida en la Nueva Implementacion de Google Apps Script
-  const API_URL = "https://script.google.com/macros/s/AKfycbwMQ5Xt-1pNBVDvdTue5D0DACRIbFagJnPXSYGEtlhjS440Z6eXm_MD7nslfTRNP2c_/exec";
+  // Reemplaza esta URL con la obtenida en el Paso 2
+  const API_URL = "https://script.google.com/macros/s/AKfycbzpBC90xHNp5YIFDysOpK6AwHcDv_1N8WrL5STcwuPavHMNyPHTErWvW1kyMui5auj6/exec";
   let tipoActual = 'EGRESO';
 
-  // Asigna la fecha actual en formato YYYY-MM-DD
+  // Fecha de hoy por defecto
   document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
 
   function setTipo(tipo) {
     tipoActual = tipo;
     const btnEgreso = document.getElementById('btnEgreso');
     const btnIngreso = document.getElementById('btnIngreso');
-    const groupCat = document.getElementById('groupCategoria');
+    const selectCat = document.getElementById('categoria');
 
     if (tipo === 'EGRESO') {
       btnEgreso.className = 'type-btn active-egreso';
       btnIngreso.className = 'type-btn';
-      groupCat.style.display = 'block';
+      selectCat.value = 'Insumos cocina';
     } else {
       btnIngreso.className = 'type-btn active-ingreso';
       btnEgreso.className = 'type-btn';
-      groupCat.style.display = 'none';
+      selectCat.value = 'Ventas';
     }
   }
 
@@ -201,17 +202,15 @@
     statusDiv.style.color = '#555';
     statusDiv.innerText = 'Guardando en Google Sheets...';
 
-    // Construccion de parametros codificados para el envio
     const formData = new URLSearchParams();
-    formData.append('tipo', tipoActual);
     formData.append('fecha', document.getElementById('fecha').value);
+    formData.append('tipo', tipoActual);
     formData.append('descripcion', document.getElementById('descripcion').value);
-    formData.append('categoria', tipoActual === 'EGRESO' ? document.getElementById('categoria').value : '');
+    formData.append('categoria', document.getElementById('categoria').value);
     formData.append('monto', montoCalculado);
     formData.append('formaPago', document.getElementById('formaPago').value);
 
     try {
-      // Peticion HTTP POST con mode: 'no-cors' y formato x-www-form-urlencoded
       await fetch(API_URL, {
         method: 'POST',
         mode: 'no-cors',
@@ -226,7 +225,7 @@
       document.getElementById('descripcion').value = '';
       document.getElementById('monto').value = '';
     } catch (err) {
-      console.error("Error al enviar la solicitud:", err);
+      console.error(err);
       statusDiv.style.color = 'red';
       statusDiv.innerText = 'Error al registrar. Intenta de nuevo.';
     } finally {
