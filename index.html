@@ -150,11 +150,11 @@
 </div>
 
 <script>
-  // Reemplaza esta URL con la que obtuviste en la 'Nueva implementación' de Apps Script
-  const API_URL = "https://script.google.com/macros/s/AKfycbzlXvCLTCkO45UKx_GFzWDMVbwq99c6BjMcF69unWSQHU_B3rkoaIOGWqfeYsmzTo1a/exec";
+  // Reemplaza esta URL por la obtenida en la Nueva Implementacion de Google Apps Script
+  const API_URL = "https://script.google.com/macros/s/AKfycbwMQ5Xt-1pNBVDvdTue5D0DACRIbFagJnPXSYGEtlhjS440Z6eXm_MD7nslfTRNP2c_/exec";
   let tipoActual = 'EGRESO';
 
-  // Establecer fecha de hoy en formato YYYY-MM-DD
+  // Asigna la fecha actual en formato YYYY-MM-DD
   document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
 
   function setTipo(tipo) {
@@ -201,22 +201,24 @@
     statusDiv.style.color = '#555';
     statusDiv.innerText = 'Guardando en Google Sheets...';
 
-    const payload = {
-      tipo: tipoActual,
-      fecha: document.getElementById('fecha').value,
-      descripcion: document.getElementById('descripcion').value,
-      categoria: tipoActual === 'EGRESO' ? document.getElementById('categoria').value : '',
-      monto: montoCalculado,
-      formaPago: document.getElementById('formaPago').value
-    };
+    // Construccion de parametros codificados para el envio
+    const formData = new URLSearchParams();
+    formData.append('tipo', tipoActual);
+    formData.append('fecha', document.getElementById('fecha').value);
+    formData.append('descripcion', document.getElementById('descripcion').value);
+    formData.append('categoria', tipoActual === 'EGRESO' ? document.getElementById('categoria').value : '');
+    formData.append('monto', montoCalculado);
+    formData.append('formaPago', document.getElementById('formaPago').value);
 
     try {
-      // Uso de mode: 'no-cors' para evitar bloqueos de seguridad del navegador
+      // Peticion HTTP POST con mode: 'no-cors' y formato x-www-form-urlencoded
       await fetch(API_URL, {
         method: 'POST',
         mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload)
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: formData.toString()
       });
 
       statusDiv.style.color = 'green';
@@ -224,7 +226,7 @@
       document.getElementById('descripcion').value = '';
       document.getElementById('monto').value = '';
     } catch (err) {
-      console.error(err);
+      console.error("Error al enviar la solicitud:", err);
       statusDiv.style.color = 'red';
       statusDiv.innerText = 'Error al registrar. Intenta de nuevo.';
     } finally {
