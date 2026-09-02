@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#2e7d32">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>El Patio - Registro Diario</title>
   <style>
     :root {
@@ -152,10 +150,10 @@
 </div>
 
 <script>
+  // Reemplaza esta URL con la nueva URL obtenida tras la 'Nueva implementación'
   const API_URL = "https://script.google.com/macros/s/AKfycbzf0tMJKFoFqQM0UJadpxyjO3C4kNyi-GadfRMx0az9BFB1dsLlGNlIi6-wizUy9wlW/exec";
   let tipoActual = 'EGRESO';
 
-  // Establecer fecha de hoy por defecto
   document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
 
   function setTipo(tipo) {
@@ -172,30 +170,6 @@
       btnIngreso.className = 'type-btn active-ingreso';
       btnEgreso.className = 'type-btn';
       groupCat.style.display = 'none';
-    }
-  }
-
-  function poblarSelects(data) {
-    const selectCat = document.getElementById('categoria');
-    const selectMedio = document.getElementById('formaPago');
-
-    if (selectCat && data.categorias && data.categorias.length > 0) {
-      selectCat.innerHTML = data.categorias.map(c => `<option value="${c}">${c}</option>`).join('');
-    }
-    if (selectMedio && data.formasPago && data.formasPago.length > 0) {
-      selectMedio.innerHTML = data.formasPago.map(m => `<option value="${m}">${m}</option>`).join('');
-    }
-  }
-
-  async function cargarFiltros() {
-    try {
-      const res = await fetch(`${API_URL}?action=getCategories`);
-      if (res.ok) {
-        const data = await res.json();
-        poblarSelects(data);
-      }
-    } catch (e) {
-      console.warn("Usando opciones locales predeterminadas:", e);
     }
   }
 
@@ -236,10 +210,10 @@
     };
 
     try {
+      // Envío con formato text/plain para evitar bloqueos de CORS en Google Apps Script
       await fetch(API_URL, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
 
@@ -248,15 +222,13 @@
       document.getElementById('descripcion').value = '';
       document.getElementById('monto').value = '';
     } catch (err) {
+      console.error(err);
       statusDiv.style.color = 'red';
       statusDiv.innerText = 'Error al registrar. Intenta de nuevo.';
     } finally {
       btn.disabled = false;
     }
   });
-
-  // Intentar sincronizar categorías en segundo plano
-  cargarFiltros();
 </script>
 
 </body>
