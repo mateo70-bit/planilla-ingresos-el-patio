@@ -150,10 +150,11 @@
 </div>
 
 <script>
-  // Reemplaza esta URL con la nueva URL obtenida tras la 'Nueva implementación'
-  const API_URL = "https://script.google.com/macros/s/AKfycbw_DS3WlJNH_PRuc5M9AipF3OQwYST8PMjbdog7e_PUmh4hJT0rdmN8tFe_8czOpp1k/exec";
+  // Reemplaza esta URL con la que obtuviste en la 'Nueva implementación' de Apps Script
+  const API_URL = "https://script.google.com/macros/s/AKfycbzlXvCLTCkO45UKx_GFzWDMVbwq99c6BjMcF69unWSQHU_B3rkoaIOGWqfeYsmzTo1a/exec";
   let tipoActual = 'EGRESO';
 
+  // Establecer fecha de hoy en formato YYYY-MM-DD
   document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
 
   function setTipo(tipo) {
@@ -210,10 +211,11 @@
     };
 
     try {
-      // Envío con formato text/plain para evitar bloqueos de CORS en Google Apps Script
+      // Uso de mode: 'no-cors' para evitar bloqueos de seguridad del navegador
       await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       });
 
