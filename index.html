@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#2e7d32">
-  <title>El Patio - Registro Único</title>
+  <title>El Patio - Registro Diario</title>
   <style>
     :root {
       --primary: #2e7d32;
@@ -36,6 +36,13 @@
     }
     .form-group {
       margin-bottom: 15px;
+    }
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+    .form-row .form-group {
+      flex: 1;
     }
     label {
       display: block;
@@ -94,7 +101,7 @@
 <body>
 
 <div class="app-card">
-  <h2>El Patio - Registro Único</h2>
+  <h2>El Patio - Registro Diario</h2>
   
   <div class="type-toggle">
     <button type="button" id="btnEgreso" class="type-btn active-egreso" onclick="setTipo('EGRESO')">EGRESO</button>
@@ -112,23 +119,25 @@
       <input type="text" id="descripcion" placeholder="Ej: Muzza, Proveedor, Ventas" required>
     </div>
 
-    <div class="form-group" id="groupCategoria">
+    <div class="form-group">
       <label for="categoria">Categoría</label>
-      <select id="categoria">
-        <option value="Sin categoria">Sin categoria</option>
-        <option value="Insumos cocina">Insumos cocina</option>
-        <option value="Bebidas">Bebidas</option>
-        <option value="Impuestos">Gastos impositivos</option>
-        <option value="Servicios">Servicios</option>
-        <option value="Varios">Gastos varios</option>
-        <option value="Devolución a socio">Devolución a socio</option>
-        <option value="Mantenimiento y mejoras">Mantenimiento y mejoras</option>
-        <option value="Ventas">Ventas</option>
-      </select>
+      <select id="categoria" required></select>
+    </div>
+
+    <!-- Campos opcionales: Cantidad y Precio Unitario -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="cantidad">Cantidad (Opcional)</label>
+        <input type="number" id="cantidad" step="any" placeholder="Ej: 10" oninput="calcularTotalUnitario()">
+      </div>
+      <div class="form-group">
+        <label for="precioUnitario">Precio Unit. ($)</label>
+        <input type="text" id="precioUnitario" placeholder="Ej: 1.500" oninput="formatAndCalculate(this)">
+      </div>
     </div>
 
     <div class="form-group">
-      <label for="monto">Monto ($) [Soporta sumas: 1500+500]</label>
+      <label for="monto">Monto Total ($) [Soporta sumas: 1500+500]</label>
       <input type="text" id="monto" placeholder="0.00" inputmode="decimal" required>
     </div>
 
@@ -137,9 +146,9 @@
       <select id="formaPago" required>
         <option value="Caja">Caja</option>
         <option value="Mercado Pago">Mercado Pago</option>
-        <option value="Adrian">Adrian</option>
-        <option value="Martin">Martin</option>
-        <option value="Marcelo">Marcelo</option>
+        <option value="Adrian">Socio Adrián</option>
+        <option value="Martin">Socio Martín</option>
+        <option value="Marcelo">Socio Marcelo</option>
       </select>
     </div>
 
@@ -150,38 +159,100 @@
 </div>
 
 <script>
-  // Reemplaza esta URL con la obtenida en el Paso 2
-  const API_URL = "https://script.google.com/macros/s/AKfycbzpBC90xHNp5YIFDysOpK6AwHcDv_1N8WrL5STcwuPavHMNyPHTErWvW1kyMui5auj6/exec";
+  // Reemplaza esta URL por la obtenida en la Nueva Implementación de Google Apps Script
+  const API_URL = "https://script.google.com/macros/s/AKfycby6ReisgG2q4saifAXKmKgfWWZ7myVfgf_030QNDIU_vWARsoSUPODVJ_nGzsM0bbs2/exec";
   let tipoActual = 'EGRESO';
 
-  // Fecha de hoy por defecto
+  const CATEGORIAS = {
+    EGRESO: [
+      'Insumos cocina',
+      'Bebidas',
+      'Gastos impositivos',
+      'Servicios',
+      'Cambio para el local',
+      'Gastos varios',
+      'Devolución a socio',
+      'Distribución utilidades',
+      'Mantenimiento y mejoras'
+    ],
+    INGRESO: [
+      'Ventas',
+      'Aportes',
+      'Otros ingresos'
+    ]
+  };
+
   document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+
+  function actualizarCategorias() {
+    const selectCat = document.getElementById('categoria');
+    const opciones = CATEGORIAS[tipoActual];
+    selectCat.innerHTML = opciones.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
 
   function setTipo(tipo) {
     tipoActual = tipo;
     const btnEgreso = document.getElementById('btnEgreso');
     const btnIngreso = document.getElementById('btnIngreso');
-    const selectCat = document.getElementById('categoria');
 
     if (tipo === 'EGRESO') {
       btnEgreso.className = 'type-btn active-egreso';
       btnIngreso.className = 'type-btn';
-      selectCat.value = 'Insumos cocina';
     } else {
       btnIngreso.className = 'type-btn active-ingreso';
       btnEgreso.className = 'type-btn';
-      selectCat.value = 'Ventas';
+    }
+    actualizarCategorias();
+  }
+
+  // Formatea un numero agregando separadores de miles con formato argentino/latino
+  function formatNumber(val) {
+    if (!val) return '';
+    let clean = val.toString().replace(/[^0-9]/g, '');
+    if (!clean) return '';
+    return parseInt(clean, 10).toLocaleString('es-AR');
+  }
+
+  function parseFormattedNumber(val) {
+    if (!val) return 0;
+    let clean = val.toString().replace(/\./g, '').replace(/,/g, '.');
+    return parseFloat(clean) || 0;
+  }
+
+  function formatAndCalculate(inputElem) {
+    let raw = inputElem.value;
+    inputElem.value = formatNumber(raw);
+    calcularTotalUnitario();
+  }
+
+  function calcularTotalUnitario() {
+    const cant = parseFloat(document.getElementById('cantidad').value) || 0;
+    const pu = parseFormattedNumber(document.getElementById('precioUnitario').value);
+    
+    if (cant > 0 && pu > 0) {
+      const total = cant * pu;
+      document.getElementById('monto').value = formatNumber(total);
     }
   }
 
-  function calcularMonto(expresion) {
+  function calcularMontoExpresion(expresion) {
     try {
-      const limpia = expresion.replace(/[^0-9+.-]/g, '');
+      // Elimina puntos de miles antes de evaluar expresiones numericas como 1.500+500
+      const sinPuntos = expresion.toString().replace(/\./g, '');
+      const limpia = sinPuntos.replace(/[^0-9+.-]/g, '');
       return Function(`'use strict'; return (${limpia})`)();
     } catch (e) {
       return NaN;
     }
   }
+
+  // Evento de formateo dinamico de miles en el campo Monto
+  document.getElementById('monto').addEventListener('blur', function() {
+    const evalResult = calcularMontoExpresion(this.value);
+    if (!isNaN(evalResult) && evalResult > 0) {
+      this.value = formatNumber(evalResult);
+    }
+  });
 
   document.getElementById('registroForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -189,7 +260,7 @@
     const btn = document.getElementById('btnGuardar');
     
     const rawMonto = document.getElementById('monto').value;
-    const montoCalculado = calcularMonto(rawMonto);
+    const montoCalculado = calcularMontoExpresion(rawMonto);
 
     if (isNaN(montoCalculado) || montoCalculado <= 0) {
       statusDiv.style.color = 'red';
@@ -206,6 +277,8 @@
     formData.append('tipo', tipoActual);
     formData.append('descripcion', document.getElementById('descripcion').value);
     formData.append('categoria', document.getElementById('categoria').value);
+    formData.append('cantidad', document.getElementById('cantidad').value);
+    formData.append('precioUnitario', parseFormattedNumber(document.getElementById('precioUnitario').value));
     formData.append('monto', montoCalculado);
     formData.append('formaPago', document.getElementById('formaPago').value);
 
@@ -213,15 +286,15 @@
       await fetch(API_URL, {
         method: 'POST',
         mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData.toString()
       });
 
       statusDiv.style.color = 'green';
       statusDiv.innerText = '¡Registrado con éxito!';
       document.getElementById('descripcion').value = '';
+      document.getElementById('cantidad').value = '';
+      document.getElementById('precioUnitario').value = '';
       document.getElementById('monto').value = '';
     } catch (err) {
       console.error(err);
@@ -231,6 +304,9 @@
       btn.disabled = false;
     }
   });
+
+  // Inicializar categorias por defecto (EGRESO)
+  actualizarCategorias();
 </script>
 
 </body>
