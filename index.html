@@ -159,7 +159,7 @@
 </div>
 
 <script>
-  // Reemplaza esta URL por la obtenida en la Nueva Implementación de Google Apps Script
+  // Reemplaza esta URL si en el futuro generas un nuevo despliegue en Google Apps Script
   const API_URL = "https://script.google.com/macros/s/AKfycby6ReisgG2q4saifAXKmKgfWWZ7myVfgf_030QNDIU_vWARsoSUPODVJ_nGzsM0bbs2/exec";
   let tipoActual = 'EGRESO';
 
@@ -205,7 +205,6 @@
     actualizarCategorias();
   }
 
-  // Formatea un numero agregando separadores de miles con formato argentino/latino
   function formatNumber(val) {
     if (!val) return '';
     let clean = val.toString().replace(/[^0-9]/g, '');
@@ -237,7 +236,6 @@
 
   function calcularMontoExpresion(expresion) {
     try {
-      // Elimina puntos de miles antes de evaluar expresiones numericas como 1.500+500
       const sinPuntos = expresion.toString().replace(/\./g, '');
       const limpia = sinPuntos.replace(/[^0-9+.-]/g, '');
       return Function(`'use strict'; return (${limpia})`)();
@@ -246,7 +244,6 @@
     }
   }
 
-  // Evento de formateo dinamico de miles en el campo Monto
   document.getElementById('monto').addEventListener('blur', function() {
     const evalResult = calcularMontoExpresion(this.value);
     if (!isNaN(evalResult) && evalResult > 0) {
@@ -270,42 +267,50 @@
 
     btn.disabled = true;
     statusDiv.style.color = '#555';
-    statusDiv.innerText = 'Guardando en Google Sheets...';
+    statusDiv.innerText = 'Guardando operación...';
 
-    const formData = new URLSearchParams();
-    formData.append('fecha', document.getElementById('fecha').value);
-    formData.append('tipo', tipoActual);
-    formData.append('descripcion', document.getElementById('descripcion').value);
-    formData.append('categoria', document.getElementById('categoria').value);
-    formData.append('cantidad', document.getElementById('cantidad').value);
-    formData.append('precioUnitario', parseFormattedNumber(document.getElementById('precioUnitario').value));
-    formData.append('monto', montoCalculado);
-    formData.append('formaPago', document.getElementById('formaPago').value);
+    // Payload estructurado como objeto JSON directo
+    const payload = {
+      fecha: document.getElementById('fecha').value,
+      tipo: tipoActual,
+      descripcion: document.getElementById('descripcion').value,
+      categoria: document.getElementById('categoria').value,
+      cantidad: document.getElementById('cantidad').value ? parseFloat(document.getElementById('cantidad').value) : null,
+      precioUnitario: parseFormattedNumber(document.getElementById('precioUnitario').value),
+      monto: montoCalculado,
+      formaPago: document.getElementById('formaPago').value
+    };
 
     try {
-      await fetch(API_URL, {
+      // Peticion optimizada usando text/plain para evitar cors-preflight y garantizar la recepción en Apps Script
+      const res = await fetch(API_URL, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData.toString()
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
       });
 
-      statusDiv.style.color = 'green';
-      statusDiv.innerText = '¡Registrado con éxito!';
-      document.getElementById('descripcion').value = '';
-      document.getElementById('cantidad').value = '';
-      document.getElementById('precioUnitario').value = '';
-      document.getElementById('monto').value = '';
+      const respuestaTexto = await res.text();
+
+      if (respuestaTexto.includes("OK")) {
+        statusDiv.style.color = 'green';
+        statusDiv.innerText = '¡Registrado con éxito!';
+        document.getElementById('descripcion').value = '';
+        document.getElementById('cantidad').value = '';
+        document.getElementById('precioUnitario').value = '';
+        document.getElementById('monto').value = '';
+      } else {
+        statusDiv.style.color = 'red';
+        statusDiv.innerText = 'Respuesta: ' + respuestaTexto;
+      }
     } catch (err) {
       console.error(err);
       statusDiv.style.color = 'red';
-      statusDiv.innerText = 'Error al registrar. Intenta de nuevo.';
+      statusDiv.innerText = 'Error al conectar con el servidor.';
     } finally {
       btn.disabled = false;
     }
   });
 
-  // Inicializar categorias por defecto (EGRESO)
   actualizarCategorias();
 </script>
 
